@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "kite": {
+      "command": "mcp-kite-server",
+      "args": []
+    },
+    "linkup": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@linkup-it/mcp-server"
+      ],
+      "env": {
+        "LINKUP_API_KEY": "YOUR_LINKUP_API_KEY"
+      }
+    }
+  }
+}
