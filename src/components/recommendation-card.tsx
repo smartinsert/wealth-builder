@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -12,6 +12,33 @@ interface RecommendationCardProps {
 
 export function RecommendationCard({ match }: RecommendationCardProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [analysis, setAnalysis] = useState<string | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && !analysis && !analyzing && !analysisError) {
+      setAnalyzing(true);
+      fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker: match.ticker.symbol })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.analysis) {
+          setAnalysis(data.analysis);
+        } else {
+          setAnalysisError(true);
+        }
+      })
+      .catch((err) => {
+        console.error("Analysis Failed:", err);
+        setAnalysisError(true);
+      })
+      .finally(() => setAnalyzing(false));
+    }
+  }, [isOpen, analysis, analyzing, analysisError, match.ticker.symbol]);
   
   const isOwned = match.status === "already_owned";
   
@@ -95,6 +122,38 @@ export function RecommendationCard({ match }: RecommendationCardProps) {
                 </div>
               </div>
             )}
+
+            {/* Fundamental Analysis Block */}
+            <div className="bg-indigo-50/50 dark:bg-indigo-950/20 p-3 rounded-md border border-indigo-100 dark:border-indigo-900/50">
+              <span className="font-semibold text-[11px] uppercase tracking-wider text-indigo-700 dark:text-indigo-400 flex items-center gap-2 mb-2">
+                {analyzing ? (
+                  <>
+                    <div className="w-3 h-3 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin"></div>
+                    On-Demand Analyst Running...
+                  </>
+                ) : "Live Fundamental Search"}
+              </span>
+              
+              {analyzing && !analysis && (
+                <div className="space-y-2 animate-pulse mt-1">
+                  <div className="h-2.5 bg-indigo-200 dark:bg-indigo-800/50 rounded w-full"></div>
+                  <div className="h-2.5 bg-indigo-200 dark:bg-indigo-800/50 rounded w-11/12"></div>
+                  <div className="h-2.5 bg-indigo-200 dark:bg-indigo-800/50 rounded w-4/5"></div>
+                </div>
+              )}
+              
+              {analysisError && !analyzing && (
+                <p className="text-destructive text-xs italic">
+                  Analyst connection failed. Could not retrieve real-time data from LinkUp.
+                </p>
+              )}
+
+              {analysis && (
+                <div className="text-[13px] leading-relaxed text-indigo-950 dark:text-indigo-200">
+                  <div className="whitespace-pre-wrap">{analysis.replace(/\*\*/g, "")}</div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </CardContent>

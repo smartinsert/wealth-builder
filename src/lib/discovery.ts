@@ -210,9 +210,9 @@ function generateId(): string {
   return `disc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export async function discoverFromSources(modelId: string = "google/gemini-1.5-flash-latest"): Promise<DiscoveryResult[]> {
+export async function discoverFromSources(modelId: string = "google/gemini-2.5-flash"): Promise<DiscoveryResult[]> {
   const sources: { url: string; source: "zerodha" | "groww" }[] = [
-    { url: "https://thedailybrief.zerodha.com", source: "zerodha" },
+    { url: "https://thedailybrief.zerodha.com/feed", source: "zerodha" },
     { url: "https://groww.in/digest", source: "groww" },
   ];
 
@@ -248,15 +248,30 @@ export async function discoverFromSources(modelId: string = "google/gemini-1.5-f
 
     let sectors = aiResult.sectors || [];
     
+    // Feature: Sector Fallback Proxies
+    // If an article discusses a macro sector (like The Daily Brief) but mentions no specific stock, 
+    // inject the top bluechip constituents of that sector into the recommendation pipeline.
+    if (tickers.length === 0 && sectors.length > 0) {
+      const fallbackProxies = sectorToTickers(sectors);
+      fallbackProxies.forEach((proxy) => {
+        tickers.push({
+          ...proxy,
+          reasoning: `While no specific stock was mentioned, the article discusses macro trends in the ${proxy.sector} sector where ${proxy.name} is a leading constituent.`,
+          recommendation: "HOLD", // Give proxy stocks a neutral sentiment
+        });
+      });
+    }
+
     // If nothing found at all, at least tag as General Market
     if (tickers.length === 0 && sectors.length === 0) {
       sectors = ["General Market"];
     }
 
-    const summary =
+    const summary = aiResult.synopsis || (
       article.body.length > 300
         ? article.body.slice(0, 300).trim() + "…"
-        : article.body;
+        : article.body
+    );
 
     discoveries.push({
       id: generateId(),

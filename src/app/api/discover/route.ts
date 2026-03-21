@@ -29,7 +29,7 @@ export async function GET() {
 // POST /api/discover — trigger a fresh discovery run
 export async function POST(req: Request) {
   try {
-    const { modelId } = await req.json().catch(() => ({ modelId: "google/gemini-1.5-flash-latest" }));
+    const { modelId } = await req.json().catch(() => ({ modelId: "google/gemini-2.5-flash" }));
     const discoveries = await discoverFromSources(modelId);
 
     // Persist to KV (or in-memory fallback)

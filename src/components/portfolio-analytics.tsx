@@ -1,6 +1,8 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { PortfolioAnalytics as AnalyticsDetails } from "@/lib/types";
 
 export function PortfolioAnalytics({ analytics }: { analytics?: AnalyticsDetails }) {
@@ -14,7 +16,17 @@ export function PortfolioAnalytics({ analytics }: { analytics?: AnalyticsDetails
     <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Est. Realized Tax PnL</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-sm font-medium">Est. Realized Tax PnL</CardTitle>
+            <Tooltip>
+              <TooltipTrigger>
+                <Info className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={5} className="z-50 bg-popover text-popover-foreground shadow-md rounded-md border p-2">
+                <p className="max-w-xs text-xs">Estimated net profit calculated by aggregating all closed SELL transactions fetched from your Kite trade ledger for the current financial year.</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </CardHeader>
         <CardContent>
           <div className={`text-2xl font-bold ${analytics.realizedTaxPnl >= 0 ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"}`}>
@@ -27,7 +39,17 @@ export function PortfolioAnalytics({ analytics }: { analytics?: AnalyticsDetails
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">LTCG Limit Available</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-sm font-medium">LTCG Limit Available</CardTitle>
+            <Tooltip>
+              <TooltipTrigger>
+                <Info className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={5} className="z-50 bg-popover text-popover-foreground shadow-md rounded-md border p-2">
+                <p className="max-w-xs text-xs">Deduces the exact quantity of holdings bought older than 365 days, and tracks their unrealized tax footprint against the ₹1,25,000 threshold to minimize your tax liability.</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex justify-between items-baseline">

@@ -10,7 +10,7 @@ import type {
 
 // ── Kite Holdings API ──
 
-const KITE_API_BASE = "https://api.kite.trade";
+const KITE_API_BASE = "https://kite.zerodha.com/oms";
 
 interface KiteHoldingRaw {
   tradingsymbol: string;
@@ -27,30 +27,28 @@ interface KiteHoldingRaw {
 
 /**
  * Fetch holdings and MF holdings from Kite API.
- * Requires KITE_API_KEY and KITE_ACCESS_TOKEN in env.
- * Falls back to a demo dataset for local development.
+ * Locally we sidestep the ₹2000 API fee by using the browser's enctoken.
+ * Falls back to a demo dataset if the token is missing or expired.
  */
 export async function fetchHoldings(): Promise<PortfolioSummary> {
-  const apiKey = process.env.KITE_API_KEY;
-  const accessToken = process.env.KITE_ACCESS_TOKEN;
+  const encToken = process.env.KITE_ENCTOKEN;
 
-  if (apiKey && accessToken) {
+  if (encToken) {
+    const headers = {
+      "X-Kite-Version": "3",
+      Authorization: `enctoken ${encToken}`,
+    };
+
     try {
       // Fetch Equity Holdings
       const eqResponse = await fetch(`${KITE_API_BASE}/portfolio/holdings`, {
-        headers: {
-          "X-Kite-Version": "3",
-          Authorization: `token ${apiKey}:${accessToken}`,
-        },
+        headers,
         signal: AbortSignal.timeout(10000),
       });
 
-      // Fetch MF Holdings
-      const mfResponse = await fetch(`${KITE_API_BASE}/portfolio/mf/holdings`, {
-        headers: {
-          "X-Kite-Version": "3",
-          Authorization: `token ${apiKey}:${accessToken}`,
-        },
+      // Fetch MF Holdings (in web, it sits under /mf/holdings instead of /portfolio/mf/holdings)
+      const mfResponse = await fetch(`${KITE_API_BASE}/mf/holdings`, {
+        headers,
         signal: AbortSignal.timeout(10000),
       });
 
@@ -107,21 +105,23 @@ export async function fetchHoldings(): Promise<PortfolioSummary> {
 // ── Trades API & Analytics ──
 
 export async function fetchTrades(): Promise<Trade[]> {
-  const apiKey = process.env.KITE_API_KEY;
-  const accessToken = process.env.KITE_ACCESS_TOKEN;
+  const encToken = process.env.KITE_ENCTOKEN;
 
-  if (apiKey && accessToken) {
+  if (encToken) {
     try {
-      const response = await fetch(`${KITE_API_BASE}/portfolio/trades`, { // Typical endpoint for trades
+      const response = await fetch(`${KITE_API_BASE}/trades`, { // Web trades endpoint
         headers: {
           "X-Kite-Version": "3",
-          Authorization: `token ${apiKey}:${accessToken}`,
+          Authorization: `enctoken ${encToken}`,
         },
         signal: AbortSignal.timeout(10000),
       });
       if (response.ok) {
         const json = await response.json();
         return json.data || [];
+      } else {
+        console.warn(`[Portfolio Trades] Kite API returned ${response.status}`);
+        console.warn(`[Portfolio Trades] Body:`, await response.text().catch(() => ""));
       }
     } catch (e) {
       console.error("[Portfolio] Failed to fetch trades", e);

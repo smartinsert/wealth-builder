@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 export function DiscoveryTrigger() {
   const [loading, setLoading] = useState(false);
-  const [model, setModel] = useState("google/gemini-1.5-flash-latest");
+  const [model, setModel] = useState("google/gemini-2.5-flash");
   const router = useRouter();
 
   async function handleDiscover() {
@@ -36,8 +36,8 @@ export function DiscoveryTrigger() {
         className="h-9 px-3 py-1 rounded-md border border-input bg-background shadow-sm text-sm"
         disabled={loading}
       >
-        <option value="google/gemini-1.5-flash-latest">Gemini 1.5 Flash (Free)</option>
-        <option value="google/gemini-1.5-pro-latest">Gemini 1.5 Pro</option>
+        <option value="google/gemini-2.5-flash">Gemini 2.5 Flash (Free)</option>
+        <option value="google/gemini-2.5-pro">Gemini 2.5 Pro</option>
         <option value="openai/gpt-4o">GPT-4o</option>
         <option value="anthropic/claude-3-haiku-20240307">Claude 3 Haiku</option>
       </select>

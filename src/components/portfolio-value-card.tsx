@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { PortfolioSummary } from "@/lib/types";
 
 export function PortfolioValueCard({ portfolio }: { portfolio: PortfolioSummary }) {
@@ -14,7 +15,17 @@ export function PortfolioValueCard({ portfolio }: { portfolio: PortfolioSummary 
       onClick={() => setIsOpen(!isOpen)}
     >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">Total Portfolio Value</CardTitle>
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-sm font-medium">Total Portfolio Value</CardTitle>
+          <Tooltip>
+            <TooltipTrigger>
+              <Info className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={5} className="z-50 bg-popover text-popover-foreground shadow-md rounded-md border p-2">
+              <p className="max-w-xs text-xs">Represents the live total market value of all synced equity and mutual fund holdings dynamically fetched from Kite API.</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
         <div className={`transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}>
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         </div>
