@@ -118,15 +118,13 @@ export function DashboardClient({ portfolio, initialDiscoveries }: DashboardClie
             </Button>
           )}
           <Tooltip>
-            <TooltipTrigger>
-              <Button onClick={handleKiteLogin} disabled={loading || isLoggingIn}>
-                {isLoggingIn ? "Logging in..." : (
-                  <>
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Kite Login
-                  </>
-                )}
-              </Button>
+            <TooltipTrigger render={<Button onClick={handleKiteLogin} disabled={loading || isLoggingIn} />}>
+              {isLoggingIn ? "Logging in..." : (
+                <>
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Kite Login
+                </>
+              )}
             </TooltipTrigger>
             <TooltipContent side="bottom" sideOffset={5} className="z-50 bg-popover text-popover-foreground shadow-md rounded-md border p-2">
               <p className="max-w-xs text-xs">This will launch a secure local Chrome window for you to login manually to Kite and capture tokens.</p>
