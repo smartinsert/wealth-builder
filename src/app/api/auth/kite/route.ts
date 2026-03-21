@@ -11,7 +11,7 @@ export async function POST() {
     const { stdout, stderr } = await execAsync("npm run extract-tokens");
     
     // Check if the script succeeded and produced the expected output tokens
-    if (stdout.includes("Successfully captured both tokens")) {
+    if (stdout.includes("Successfully captured enctoken") || stdout.includes("Successfully captured both tokens")) {
       return NextResponse.json({ success: true, message: "Kite tokens extracted successfully." });
     } else {
       console.error("[Kite Auth] Output does not indicate full success:", stdout);
