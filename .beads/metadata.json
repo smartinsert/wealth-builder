@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "server",
+  "dolt_database": "wealth_builder",
+  "project_id": "da18aa26-b209-4853-aeb5-860bd479268c"
+}
