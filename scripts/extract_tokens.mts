@@ -77,8 +77,8 @@ async function extractTokens() {
         }
       }
 
-      if (csrfToken && encToken) {
-        console.log('🎉 Successfully captured both tokens!');
+      if (encToken) {
+        console.log('🎉 Successfully captured enctoken!');
         break;
       }
     } catch (error: any) {
@@ -94,12 +94,15 @@ async function extractTokens() {
     loops++;
   }
 
-  if (csrfToken && encToken) {
+  if (encToken) {
     console.log('💾 Saving to .env.local...');
-    updateEnvFile({
+    const payload: Record<string, string> = {
       KITE_ENCTOKEN: encToken,
-      KITE_CSRFTOKEN: csrfToken,
-    });
+    };
+    if (csrfToken) {
+      payload.KITE_CSRFTOKEN = csrfToken;
+    }
+    updateEnvFile(payload);
     console.log('✨ Done. You can now close the browser if it didn\'t close automatically.');
   } else {
     console.error('❌ Failed to capture tokens before timeout.');
