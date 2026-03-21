@@ -59,18 +59,27 @@ async function extractTokens() {
   let loops = 0;
 
   while (loops < maxLoops) {
-    // Attempt to grab enctoken from cookies
-    const cookies = await page.cookies();
-    const encCookie = cookies.find((c) => c.name === 'enctoken');
-    
-    if (encCookie && !encToken) {
-      encToken = encCookie.value;
-      console.log('✅ Captured KITE_ENCTOKEN:', encToken.substring(0, 10) + '...');
-    }
+    try {
+      // Attempt to grab enctoken from cookies
+      const cookies = await page.cookies();
+      const encCookie = cookies.find((c) => c.name === 'enctoken');
+      
+      if (encCookie && !encToken) {
+        encToken = encCookie.value;
+        console.log('✅ Captured KITE_ENCTOKEN:', encToken.substring(0, 10) + '...');
+      }
 
-    if (csrfToken && encToken) {
-      console.log('🎉 Successfully captured both tokens!');
-      break;
+      if (csrfToken && encToken) {
+        console.log('🎉 Successfully captured both tokens!');
+        break;
+      }
+    } catch (error: any) {
+      if (error.message.includes('Session closed') || error.message.includes('Target closed')) {
+        console.log('⚠️ Browser was closed manually before capturing all tokens.');
+        break;
+      } else {
+        throw error;
+      }
     }
 
     await new Promise((r) => setTimeout(r, 1000));
