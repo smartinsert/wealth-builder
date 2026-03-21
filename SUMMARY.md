@@ -1,14 +1,14 @@
-# Session Summary: Token Extraction Utility
+# Session Summary: Kite Login Integration
 
 ## What was accomplished
-- Added `puppeteer`, `puppeteer-extra`, and `puppeteer-extra-plugin-stealth` dependencies to `package.json`.
-- Created a new script `scripts/extract_tokens.mts` that automates launching a headful Chrome browser to log in to Zerodha Console.
-- The script successfully intercepts network requests to steal the `x-csrftoken` and reads cookies to steal the `enctoken`.
-- Configured the script to automatically write/update `KITE_ENCTOKEN` and `KITE_CSRFTOKEN` inside `.env.local`.
-- Added `"extract-tokens": "npx tsx scripts/extract_tokens.mts"` command to `package.json`.
+- Created a local API route (`/api/auth/kite/route.ts`) that programmatically spawns the existing token extraction Puppeteer script.
+- Updated `DashboardClient` to include a "Kite Login" button.
+- The button calls the local API route, waits for the user to securely log in via the headful Chrome pop-up, captures the `enctoken` and `csrftoken`, and finally automatically refreshes the Next.js component to fetch live portfolio data.
+- Handled UI states (loading indications) and added a helpful tooltip for the new button.
 
 ## How to use
-Run `npm run extract-tokens` at any time if your Zerodha session expires and you need fresh tokens for fetching historical holdings from the Console API.
+On the dashboard, click the "Kite Login" button. A new Chrome window will open to `console.zerodha.com`. Perform your login manually, and once completed, the browser will close and your dashboard will immediately refresh with your live holdings.
 
 ## Next Steps
-- Integrate the fetched historical holdings from the Zerodha Console API into the Portfolio Audit feature.
+- Implement historical P&L charts using the analytics computed from the extracted tokens.
+- Refine the discovery engine matching algorithm with more dynamic logic.

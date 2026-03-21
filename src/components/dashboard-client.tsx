@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { PortfolioValueCard } from "@/components/portfolio-value-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Info } from "lucide-react";
+import { Info, LogIn } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { RecommendationCard } from "@/components/recommendation-card";
 import { PortfolioAnalytics } from "@/components/portfolio-analytics";
@@ -26,8 +27,10 @@ interface DashboardClientProps {
 }
 
 export function DashboardClient({ portfolio, initialDiscoveries }: DashboardClientProps) {
+  const router = useRouter();
   const [discoveries, setDiscoveries] = useState<DiscoveryResult[]>(initialDiscoveries);
   const [loading, setLoading] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [filterSource, setFilterSource] = useState<string>("all");
   const [activeTab, setActiveTab] = useState<"dashboard" | "ltcg">("dashboard");
 
@@ -39,6 +42,27 @@ export function DashboardClient({ portfolio, initialDiscoveries }: DashboardClie
 
   const auditResult: PortfolioAuditResult | null = 
     discoveries.length > 0 ? matchDiscoveriesWithHoldings(filteredDiscoveries, portfolio) : null;
+
+  async function handleKiteLogin() {
+    setIsLoggingIn(true);
+    try {
+      const res = await fetch("/api/auth/kite", { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          router.refresh(); // Reload the server components to fetch new portfolio
+        } else {
+          console.error("Kite login did not fully succeed:", data.error);
+        }
+      } else {
+        console.error("Kite login request failed", await res.text());
+      }
+    } catch (error) {
+      console.error("Failed to run Kite login:", error);
+    } finally {
+      setIsLoggingIn(false);
+    }
+  }
 
   async function handleDiscover() {
     setLoading(true);
@@ -87,12 +111,27 @@ export function DashboardClient({ portfolio, initialDiscoveries }: DashboardClie
             </button>
           </div>
         </div>
-        <div className="mt-1">
+        <div className="mt-1 flex flex-col sm:flex-row gap-2">
           {activeTab === "dashboard" && (
-            <Button onClick={handleDiscover} disabled={loading}>
+            <Button onClick={handleDiscover} disabled={loading || isLoggingIn} variant="outline">
               {loading ? "Running Discovery..." : "Run Discovery Engine"}
             </Button>
           )}
+          <Tooltip>
+            <TooltipTrigger>
+              <Button onClick={handleKiteLogin} disabled={loading || isLoggingIn}>
+                {isLoggingIn ? "Logging in..." : (
+                  <>
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Kite Login
+                  </>
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={5} className="z-50 bg-popover text-popover-foreground shadow-md rounded-md border p-2">
+              <p className="max-w-xs text-xs">This will launch a secure local Chrome window for you to login manually to Kite and capture tokens.</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </header>
 
