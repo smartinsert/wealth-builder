@@ -40,12 +40,18 @@ async function extractTokens() {
   page.on('request', (request) => {
     const headers = request.headers();
     
-    // Look for Console API requests to steal the CSRF token
-    if (request.url().includes('console.zerodha.com/api')) {
+    // Look for API requests to intercept both tokens
+    if (request.url().includes('zerodha.com/api')) {
       if (headers['x-csrftoken']) {
         if (!csrfToken) {
           csrfToken = headers['x-csrftoken'];
           console.log('✅ Captured KITE_CSRFTOKEN:', csrfToken.substring(0, 10) + '...');
+        }
+      }
+      if (headers['authorization'] && headers['authorization'].toLowerCase().includes('enctoken')) {
+        if (!encToken) {
+          encToken = headers['authorization'].split(' ')[1];
+          console.log('✅ Captured KITE_ENCTOKEN from Headers:', encToken.substring(0, 10) + '...');
         }
       }
     }
@@ -60,13 +66,15 @@ async function extractTokens() {
 
   while (loops < maxLoops) {
     try {
-      // Attempt to grab enctoken from cookies
-      const cookies = await page.cookies();
-      const encCookie = cookies.find((c) => c.name === 'enctoken');
-      
-      if (encCookie && !encToken) {
-        encToken = encCookie.value;
-        console.log('✅ Captured KITE_ENCTOKEN:', encToken.substring(0, 10) + '...');
+      // Fallback: Attempt to grab enctoken from cookies directly if not found in headers
+      if (!encToken) {
+        const cookies = await page.cookies('https://kite.zerodha.com', 'https://console.zerodha.com');
+        const encCookie = cookies.find((c) => c.name === 'enctoken');
+        
+        if (encCookie) {
+          encToken = encCookie.value;
+          console.log('✅ Captured KITE_ENCTOKEN from Cookies:', encToken.substring(0, 10) + '...');
+        }
       }
 
       if (csrfToken && encToken) {
