@@ -29,7 +29,8 @@ interface HarvestHolding {
   unrealizedGain: number;
   unrealizedGainPct: number;
   currentValue: number;
-  buyDate?: string; // Tracked via separate API later
+  type: "LTCG" | "STCG";
+  buyDateStr: string;
 }
 
 interface HarvestingPlan {
@@ -112,7 +113,9 @@ function HoldingRow({ h, tag }: { h: HarvestHolding; tag?: "sell-gain" | "sell-l
         <div className="hidden sm:block text-muted-foreground text-xs text-right">
           <div>{h.quantity} @ {formatINR(h.average_price)}</div>
           <div className="text-[11px]">LTP: {formatINR(h.last_price)}</div>
-          <div className="text-[10px] text-amber-600/70 font-medium tracking-tight mt-0.5 whitespace-nowrap">Buy Date: {h.buyDate || "Unknown (Console)"}</div>
+          <div className="text-[10px] font-medium tracking-tight mt-0.5 whitespace-nowrap">
+            <span className={h.type === "LTCG" ? "text-purple-600 dark:text-purple-400 font-bold" : "text-amber-600 dark:text-amber-500"}>[{h.type}]</span> {h.buyDateStr}
+          </div>
         </div>
         <div className={`font-semibold whitespace-nowrap ${isGain ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"}`}>
           {formatINR(h.unrealizedGain, true)}
@@ -318,8 +321,8 @@ export function LTCGTab() {
               </CardHeader>
               <CardContent className="max-h-72 overflow-y-auto">
                 {plan.sellGains.length === 0
-                  ? <p className="text-sm text-muted-foreground italic">No gains to book — your losses fully offset any gains.</p>
-                  : plan.sellGains.map(h => <HoldingRow key={h.tradingsymbol} h={h} tag="sell-gain" />)
+                  ? <p className="text-sm text-muted-foreground italic">No long-term gains to book — your losses fully offset any gains.</p>
+                  : plan.sellGains.map(h => <HoldingRow key={h.tradingsymbol + h.type} h={h} tag="sell-gain" />)
                 }
                 <div className="mt-3 pt-2 border-t flex justify-between text-sm font-medium">
                   <span>Total gains to book</span>
@@ -338,7 +341,7 @@ export function LTCGTab() {
               <CardContent className="max-h-72 overflow-y-auto">
                 {plan.sellLosses.length === 0
                   ? <p className="text-sm text-muted-foreground italic">No losses to harvest — you are among the lucky ones!</p>
-                  : plan.sellLosses.map(h => <HoldingRow key={h.tradingsymbol} h={h} tag="sell-loss" />)
+                  : plan.sellLosses.map(h => <HoldingRow key={h.tradingsymbol + h.type} h={h} tag="sell-loss" />)
                 }
                 <div className="mt-3 pt-2 border-t flex justify-between text-sm font-medium">
                   <span>Total losses harvested</span>
@@ -350,7 +353,7 @@ export function LTCGTab() {
 
           {/* Disclaimer */}
           <div className="rounded-md bg-muted/50 border p-3 text-xs text-muted-foreground">
-            <strong>Disclaimer:</strong> This overview simulates profit booking based strictly on your unrealized totals. Kite API web endpoints do not return trade dates per-lot, therefore it incorrectly assumes all your profitable holdings span &gt;1 year. Do not make trades before verifying exact purchase dates directly via Kite Console.
+            <strong>Note:</strong> This harvesting plan correctly identifies <strong>LTCG</strong> (&gt;1 year) and <strong>STCG</strong> lots exactly via your Console Tradebook history using FIFO allocation backwards across previous years. Only Long-Term lots are suggested above to reach the 1.25L tax-free threshold.
           </div>
         </div>
       )}

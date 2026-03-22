@@ -6,7 +6,7 @@
   - Engineered `/api/portfolio/historical`. This API seamlessly taps into `yahooFinance.historical()`.
   - Upgraded the `MarketOverview` UI to display performance comparisons (NIFTY vs NIFTY BANK vs Portfolio) interactively across `1D`, `1W`, `1M`, `6M`, and `1Y` periods.
 - **Holdings Table**: Added a detailed, responsive `HoldingsTable` layout incorporating rapid client-side search indexing and multi-column sorting (`Symbol`, `Value`, `PnL`, and `1D Change`).
-- **LTCG Optimizer Adjustment**: Restructured and toned down UI language within `ltcg-tab.tsx` to prevent misleading constraints. Re-contextualized "LTCG Limit Exceeded" into a visual optimization target, and added an upfront disclaimer indicating trade date validation via Console API is fundamentally required before executing any harvests. The `Buy Date` row field was added cleanly, marking unknown values.
+- **LTCG Optimizer Adjustment**: Restructured `/api/tax` to natively scrape the Zerodha Console `reports/tradebook` endpoint. Automatically steps backward year-by-year extracting buy trades and allocating lots using a robust FIFO mapping technique. The UI now exclusively suggests actual `[LTCG]` (&gt;1 year) stocks to meet the 1.25L limit, drastically increasing mathematical tax accuracy!
 - **Profile Integration**:
   - Engineered `/api/profile` to seamlessly grab the logged-in user's profile off Kite OMS endpoints.
   - Automatically replaces the static `Kite Login` button with a dynamic `Welcome, {user}` badge accompanied by their avatar when `enctoken` exists.

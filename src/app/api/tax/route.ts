@@ -78,58 +78,169 @@ export async function GET() {
 
     const allHoldings = [...rawHoldings, ...parsedMfHoldings];
 
-    // --- LTCG Analysis ---
-    // Kite does not expose per-lot purchase dates via the web holdings API.
-    // We use the real `pnl` from Kite (which is (last_price - avg_price) * qty) as the
-    // unrealized gain — this is always accurate.
-    // For LTCG classification: stocks with a positive unrealized gain are candidates.
-    // We surface ALL profitable holdings sorted by gain (largest LTCG opportunity first).
+    // --- Trace Buy Dates via Console Tradebook ---
+    interface TradebookTrade {
+      trade_date: string;
+      trade_type: string;
+      quantity: number;
+      tradingsymbol: string;
+    }
 
-    const profitable: LTCGHolding[] = allHoldings
-      .filter(h => h.pnl > 0)
-      .map(h => {
-        const currentValue = h.last_price * h.quantity;
-        const costBasis = h.average_price * h.quantity;
-        const unrealizedGainPct = ((h.last_price - h.average_price) / h.average_price) * 100;
-        return {
-          tradingsymbol: h.tradingsymbol,
-          exchange: h.exchange,
-          isin: h.isin,
-          quantity: h.quantity,
-          average_price: h.average_price,
-          last_price: h.last_price,
-          currentValue,
-          costBasis,
-          unrealizedGain: h.pnl,
+    const allBuyTrades: TradebookTrade[] = [];
+    const uncoveredHoldings = new Set(allHoldings.map(h => h.tradingsymbol));
+    const requiredQty: Record<string, number> = {};
+    for (const h of allHoldings) requiredQty[h.tradingsymbol] = h.quantity;
+
+    let currentDate = new Date();
+    const consoleCookies = process.env.KITE_CONSOLE_COOKIES || "";
+    const consoleCsrf = process.env.KITE_CSRFTOKEN || "";
+
+    if (consoleCookies && consoleCsrf) {
+      // Limit backwards fetch to max 15 years to prevent infinite loops
+      const MAX_YEARS_BACK = 15;
+      let yearsIterated = 0;
+
+      while (uncoveredHoldings.size > 0 && yearsIterated < MAX_YEARS_BACK) {
+        let toDate = currentDate.toISOString().split('T')[0];
+        currentDate.setFullYear(currentDate.getFullYear() - 1);
+        let fromDate = currentDate.toISOString().split('T')[0];
+
+        let page = 1;
+        let totalPages = 1;
+        let fetchedAnyInInterval = false;
+
+        while (page <= totalPages) {
+          const url = `https://console.zerodha.com/api/reports/tradebook?segment=EQ&from_date=${fromDate}&to_date=${toDate}&page=${page}&sort_by=order_execution_time&sort_desc=false`;
+          const res = await fetch(url, {
+            headers: {
+              "accept": "application/json, text/plain, */*",
+              "sec-ch-ua": "\"Chromium\";v=\"146\", \"Not-A.Brand\";v=\"24\", \"Google Chrome\";v=\"146\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"Windows\"",
+              "sec-fetch-dest": "empty",
+              "sec-fetch-mode": "cors",
+              "sec-fetch-site": "same-origin",
+              "x-csrftoken": consoleCsrf,
+              "cookie": consoleCookies
+            }
+          });
+
+          if (!res.ok) {
+            console.error(`[Tax API] Tradebook fetch failed at page ${page} for interval ${fromDate} to ${toDate}`);
+            break;
+          }
+
+          const data = await res.json();
+          if (data.status !== "success") break;
+
+          const results = data.data.result || [];
+          if (results.length > 0) fetchedAnyInInterval = true;
+
+          const buyTrades = results.filter((t: any) => t.trade_type === 'buy');
+          allBuyTrades.push(...buyTrades);
+
+          totalPages = data.data.pagination.total_pages;
+          page++;
+        }
+
+        if (!fetchedAnyInInterval) {
+          // If a full year yields zero trades, we've likely hit the beginning of the user's trading history
+          // Any unaccounted lots might be off-market transfers or pre-Zerodha holdings (which are definitely LTCG).
+          break;
+        }
+
+        for (const symbol of Array.from(uncoveredHoldings)) {
+          const buyQtySoFar = allBuyTrades.filter(t => t.tradingsymbol === symbol).reduce((sum, t) => sum + t.quantity, 0);
+          if (buyQtySoFar >= requiredQty[symbol]) {
+            uncoveredHoldings.delete(symbol);
+          }
+        }
+        
+        yearsIterated++;
+      }
+    } else {
+      console.warn("[Tax API] Missing KITE_CONSOLE_COOKIES or KITE_CSRFTOKEN. Operating without lot-tracking.");
+    }
+
+    // Sort descending by date (most recent buys first) to apply FIFO accurately.
+    allBuyTrades.sort((a, b) => new Date(b.trade_date).getTime() - new Date(a.trade_date).getTime());
+
+
+
+    const splitHoldings: (LTCGHolding & { type: "LTCG" | "STCG", buyDateStr: string })[] = [];
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+    for (const h of allHoldings) {
+      let remainingQty = h.quantity;
+      let stcgQty = 0;
+      let ltcgQty = 0;
+
+      const matchingBuys = allBuyTrades.filter(t => t.tradingsymbol === h.tradingsymbol);
+      for (const buy of matchingBuys) {
+        if (remainingQty <= 0) break;
+        const take = Math.min(buy.quantity, remainingQty);
+
+        const tradeDate = new Date(buy.trade_date);
+        if (tradeDate > oneYearAgo) {
+          stcgQty += take;
+        } else {
+          ltcgQty += take;
+        }
+        remainingQty -= take;
+      }
+
+      // Unaccounted stocks are assumed mathematically oldest (pre-history or split/bonus adjusted), hence LTCG
+      if (remainingQty > 0) {
+        ltcgQty += remainingQty;
+      }
+
+      const costBasis = h.average_price * h.quantity;
+      const perShareGain = h.pnl / (h.quantity || 1);
+      const unrealizedGainPct = costBasis > 0 ? (h.pnl / costBasis) * 100 : 0;
+
+      if (stcgQty > 0) {
+        splitHoldings.push({
+          ...h,
+          quantity: stcgQty,
+          currentValue: stcgQty * h.last_price,
+          costBasis: stcgQty * h.average_price,
+          unrealizedGain: stcgQty * perShareGain,
           unrealizedGainPct,
-        };
-      })
+          type: "STCG",
+          buyDateStr: "< 1 Year"
+        });
+      }
+
+      if (ltcgQty > 0) {
+        splitHoldings.push({
+          ...h,
+          quantity: ltcgQty,
+          currentValue: ltcgQty * h.last_price,
+          costBasis: ltcgQty * h.average_price,
+          unrealizedGain: ltcgQty * perShareGain,
+          unrealizedGainPct,
+          type: "LTCG",
+          buyDateStr: "> 1 Year"
+        });
+      }
+    }
+
+    // --- LTCG Analysis ---
+    
+    // Profitable holdings eligible for Tax Harvesting
+    const profitable = splitHoldings
+      .filter(h => h.unrealizedGain > 0)
       .sort((a, b) => b.unrealizedGain - a.unrealizedGain);
 
-    const losing: LTCGHolding[] = allHoldings
-      .filter(h => h.pnl <= 0)
-      .map(h => {
-        const currentValue = h.last_price * h.quantity;
-        const costBasis = h.average_price * h.quantity;
-        const unrealizedGainPct = ((h.last_price - h.average_price) / h.average_price) * 100;
-        return {
-          tradingsymbol: h.tradingsymbol,
-          exchange: h.exchange,
-          isin: h.isin,
-          quantity: h.quantity,
-          average_price: h.average_price,
-          last_price: h.last_price,
-          currentValue,
-          costBasis,
-          unrealizedGain: h.pnl,
-          unrealizedGainPct,
-        };
-      })
+    // Losing holdings to offset the gains
+    const losing = splitHoldings
+      .filter(h => h.unrealizedGain <= 0)
       .sort((a, b) => a.unrealizedGain - b.unrealizedGain);
 
-    const totalUnrealizedGain = profitable.reduce((sum, h) => sum + h.unrealizedGain, 0);
-    const totalUnrealizedLoss = losing.reduce((sum, h) => sum + h.unrealizedGain, 0);
-    const netUnrealizedPnl = totalUnrealizedGain + totalUnrealizedLoss;
+    const totalUnrealizedGain = profitable.filter(h => h.type === "LTCG").reduce((sum, h) => sum + h.unrealizedGain, 0);
+    const totalUnrealizedLoss = losing.reduce((sum, h) => sum + h.unrealizedGain, 0); // all losses count
+    const netUnrealizedPnl = splitHoldings.reduce((sum, h) => sum + h.unrealizedGain, 0);
     const ltcgLimitRemaining = Math.max(0, LTCG_THRESHOLD - totalUnrealizedGain);
     const ltcgUtilizationPct = Math.min(100, (totalUnrealizedGain / LTCG_THRESHOLD) * 100);
 
