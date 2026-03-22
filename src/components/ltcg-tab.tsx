@@ -140,10 +140,12 @@ export function LTCGTab() {
   const [error, setError] = useState<string | null>(null);
   const [plan, setPlan] = useState<HarvestingPlan | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "optimizer">("overview");
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   const fetchData = useCallback(() => {
     setLoading(true);
     setError(null);
+    setSessionExpired(false);
     // Fetch from our server endpoint (which reads from Kite)
     fetch("/api/tax")
       .then(r => r.json())
@@ -161,6 +163,7 @@ export function LTCGTab() {
           setPlan(computeHarvestingPlan(d.profitable, d.losing));
         } else {
           setError(d.error || "Failed to load holdings from Kite");
+          if (d.sessionExpired) setSessionExpired(true);
         }
       })
       .catch(() => setError("Could not connect to Kite API"))
@@ -182,9 +185,15 @@ export function LTCGTab() {
   if (error || !summary) {
     return (
       <div className="p-10 text-center border rounded-xl border-dashed">
-        <p className="text-destructive font-medium mb-1">Failed to load tax analytics</p>
-        <p className="text-sm text-muted-foreground mb-4">{error}</p>
-        <Button variant="outline" size="sm" onClick={fetchData}>Retry</Button>
+        <p className="text-destructive font-medium mb-1">
+          {sessionExpired ? "Kite Session Expired" : "Failed to load tax analytics"}
+        </p>
+        <p className="text-sm text-muted-foreground mb-4">
+          {sessionExpired
+            ? "Your Kite session tokens have expired or are missing. Please click 'Kite Login' in the top right to re-authenticate."
+            : error}
+        </p>
+        {!sessionExpired && <Button variant="outline" size="sm" onClick={fetchData}>Retry</Button>}
       </div>
     );
   }

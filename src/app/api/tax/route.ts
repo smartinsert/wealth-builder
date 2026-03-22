@@ -55,6 +55,14 @@ export async function GET() {
     if (!holdingsRes.ok || !mfHoldingsRes.ok) {
       const errorText = await holdingsRes.text();
       console.error("[Tax API] Holdings fetch failed:", holdingsRes.status, errorText);
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.error_type === "TokenException") {
+          return NextResponse.json({ error: "Your Kite session has expired. Please re-authenticate.", sessionExpired: true }, { status: 403 });
+        }
+      } catch (e) {
+        // Ignore parse error
+      }
       return NextResponse.json({ error: "Failed to fetch holdings from Kite" }, { status: holdingsRes.status });
     }
 

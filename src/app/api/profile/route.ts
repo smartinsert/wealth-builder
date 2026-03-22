@@ -15,6 +15,13 @@ export async function GET() {
     });
 
     if (!res.ok) {
+      const text = await res.text();
+      try {
+        const json = JSON.parse(text);
+        if (json.error_type === "TokenException") {
+          return NextResponse.json({ success: false, error: "Session expired", sessionExpired: true }, { status: 403 });
+        }
+      } catch (e) {}
       return NextResponse.json(
         { success: false, error: "Failed to fetch profile from Kite" },
         { status: res.status }
