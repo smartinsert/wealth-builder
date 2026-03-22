@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PortfolioValueCard } from "@/components/portfolio-value-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,6 +34,22 @@ export function DashboardClient({ portfolio, initialDiscoveries }: DashboardClie
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [filterSource, setFilterSource] = useState<string>("all");
   const [activeTab, setActiveTab] = useState<"summary" | "recommendations" | "ltcg">("summary");
+  const [profile, setProfile] = useState<{ user_shortname: string; avatar_url: string | null } | null>(null);
+
+  useEffect(() => {
+    // Attempt to fetch profile assuming enctoken is present in the env
+    fetch("/api/profile")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.status === "success" && data.data) {
+          setProfile({
+            user_shortname: data.data.user_shortname,
+            avatar_url: data.data.avatar_url,
+          });
+        }
+      })
+      .catch((err) => console.error("Failed to fetch profile:", err));
+  }, []);
 
   const sources = Array.from(new Set(discoveries.map(d => d.source)));
 
@@ -130,19 +146,33 @@ export function DashboardClient({ portfolio, initialDiscoveries }: DashboardClie
               {loading ? "Running Discovery..." : "Run Discovery Engine"}
             </Button>
           )}
-          <Tooltip>
-            <TooltipTrigger render={<Button onClick={handleKiteLogin} disabled={loading || isLoggingIn} variant="secondary" />}>
-                {isLoggingIn ? "Logging in..." : (
-                  <>
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Kite Login
-                  </>
-                )}
-            </TooltipTrigger>
-            <TooltipContent side="bottom" sideOffset={5} className="z-50 bg-popover text-popover-foreground shadow-md rounded-md border p-2">
-              <p className="max-w-xs text-xs">This will launch a secure local Chrome window for you to login manually to Kite and capture tokens.</p>
-            </TooltipContent>
-          </Tooltip>
+
+          {profile ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-secondary text-secondary-foreground rounded-md border text-sm font-medium">
+              {profile.avatar_url ? (
+                <img src={profile.avatar_url} alt="Avatar" className="w-5 h-5 rounded-full" />
+              ) : (
+                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold">
+                  {profile.user_shortname.charAt(0)}
+                </div>
+              )}
+              Welcome, {profile.user_shortname}
+            </div>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger render={<Button onClick={handleKiteLogin} disabled={loading || isLoggingIn} variant="secondary" />}>
+                  {isLoggingIn ? "Logging in..." : (
+                    <>
+                      <LogIn className="mr-2 h-4 w-4" />
+                      Kite Login
+                    </>
+                  )}
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={5} className="z-50 bg-popover text-popover-foreground shadow-md rounded-md border p-2">
+                <p className="max-w-xs text-xs">This will launch a secure local Chrome window for you to login manually to Kite and capture tokens.</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </header>
 

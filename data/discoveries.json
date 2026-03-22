@@ -1848,5 +1848,311 @@
       "discoveredAt": "2026-03-19T15:33:12.749Z"
     },
     "expiresAt": 1774539192756
+  },
+  "disc_1774193687001_v0i3nb": {
+    "data": {
+      "id": "disc_1774193687001_v0i3nb",
+      "source": "zerodha",
+      "title": "<![CDATA[The Daily Brief by Zerodha]]>",
+      "url": "https://thedailybrief.zerodha.com/feed",
+      "tickers": [
+        {
+          "symbol": "INDIGO",
+          "name": "INDIGO",
+          "exchange": "NSE",
+          "sector": "Unknown",
+          "reasoning": "Indigo is mentioned in the context of India's aviation sector facing a severe pilot shortage, exacerbated by new DGCA flight duty time limitations, which force airlines to hire more pilots and increase operational costs. Its former CEO highlighted the 'disturbing' trend of pilot poaching.",
+          "recommendation": "HOLD"
+        },
+        {
+          "symbol": "COALINDIA",
+          "name": "Coal India",
+          "exchange": "NSE",
+          "sector": "Mining",
+          "reasoning": "The article notes 'Coal India's Brain Goes Public,' indicating a significant corporate event, likely an IPO or spin-off of a valuable subsidiary or intellectual property, which could unlock value for the company.",
+          "recommendation": "BUY"
+        }
+      ],
+      "sectors": [
+        "Technology",
+        "Energy",
+        "Aviation",
+        "Manufacturing",
+        "Financial Services"
+      ],
+      "summary": "The article discusses the vulnerability of the AI bubble to rising interest rates and energy costs, fueled by geopolitical events and questionable revenue reporting by AI firms. It also examines China's economic strategy of target-driven growth leading to global overproduction and its push for technological sovereignty through open-source software. Furthermore, it highlights a paradox in India's aviation sector: an overall abundance of pilots but a critical shortage of specific types due to new, stricter flight duty regulations, increasing demand and costs for airlines.",
+      "discoveredAt": "2026-03-22T15:34:47.001Z"
+    },
+    "expiresAt": 1774798496461
+  },
+  "disc_1774193696444_pqdem5": {
+    "data": {
+      "id": "disc_1774193696444_pqdem5",
+      "source": "groww",
+      "title": "Daily and Weekly Digest - Latest News and Updates on Digest at Groww",
+      "url": "https://groww.in/digest",
+      "tickers": [
+        {
+          "symbol": "TATAMOTORS",
+          "name": "Tata Motors",
+          "exchange": "NSE",
+          "sector": "Auto",
+          "reasoning": "The stock was listed as one of the 'Top Gainers Stocks' on the Groww platform, indicating positive performance.",
+          "recommendation": "BUY"
+        },
+        {
+          "symbol": "NHPC",
+          "name": "NHPC",
+          "exchange": "NSE",
+          "sector": "Unknown",
+          "reasoning": "The stock was listed as one of the 'Top Gainers Stocks' on the Groww platform, indicating positive performance.",
+          "recommendation": "BUY"
+        },
+        {
+          "symbol": "ITC",
+          "name": "ITC",
+          "exchange": "NSE",
+          "sector": "FMCG",
+          "reasoning": "The stock was listed as one of the 'Top Gainers Stocks' on the Groww platform, indicating positive performance.",
+          "recommendation": "BUY"
+        },
+        {
+          "symbol": "WIPRO",
+          "name": "Wipro",
+          "exchange": "NSE",
+          "sector": "IT",
+          "reasoning": "The stock was listed as one of the 'Top Gainers Stocks' on the Groww platform, indicating positive performance.",
+          "recommendation": "BUY"
+        },
+        {
+          "symbol": "BSE",
+          "name": "BSE",
+          "exchange": "NSE",
+          "sector": "Unknown",
+          "reasoning": "The stock was listed as one of the 'Top Gainers Stocks' on the Groww platform, indicating positive performance.",
+          "recommendation": "BUY"
+        },
+        {
+          "symbol": "NTPC",
+          "name": "NTPC",
+          "exchange": "NSE",
+          "sector": "Power",
+          "reasoning": "The stock was listed as one of the 'Top Gainers Stocks' on the Groww platform, indicating positive performance.",
+          "recommendation": "BUY"
+        },
+        {
+          "symbol": "IREDA",
+          "name": "IREDA",
+          "exchange": "NSE",
+          "sector": "Unknown",
+          "reasoning": "The stock was listed as one of the 'Top Losers Stocks' on the Groww platform, indicating negative performance.",
+          "recommendation": "SELL"
+        },
+        {
+          "symbol": "SBIN",
+          "name": "State Bank of India",
+          "exchange": "NSE",
+          "sector": "Banking",
+          "reasoning": "The stock was listed as one of the 'Top Losers Stocks' on the Groww platform, indicating negative performance.",
+          "recommendation": "SELL"
+        },
+        {
+          "symbol": "ADANIPOWER",
+          "name": "ADANIPOWER",
+          "exchange": "NSE",
+          "sector": "Unknown",
+          "reasoning": "The stock was listed as one of the 'Top Losers Stocks' on the Groww platform, indicating negative performance.",
+          "recommendation": "SELL"
+        },
+        {
+          "symbol": "CDSL",
+          "name": "CDSL",
+          "exchange": "NSE",
+          "sector": "Unknown",
+          "reasoning": "The stock was listed as one of the 'Top Losers Stocks' on the Groww platform, indicating negative performance.",
+          "recommendation": "SELL"
+        },
+        {
+          "symbol": "COCHINSHIP",
+          "name": "COCHINSHIP",
+          "exchange": "NSE",
+          "sector": "Unknown",
+          "reasoning": "The stock was listed as one of the 'Top Losers Stocks' on the Groww platform, indicating negative performance.",
+          "recommendation": "SELL"
+        },
+        {
+          "symbol": "SJVN",
+          "name": "SJVN",
+          "exchange": "NSE",
+          "sector": "Unknown",
+          "reasoning": "The stock was listed as one of the 'Top Losers Stocks' on the Groww platform, indicating negative performance.",
+          "recommendation": "SELL"
+        },
+        {
+          "symbol": "TATASTEEL",
+          "name": "Tata Steel",
+          "exchange": "NSE",
+          "sector": "Metals",
+          "reasoning": "The stock was mentioned as one of the 'Most Traded Stocks', indicating high trading activity.",
+          "recommendation": "HOLD"
+        },
+        {
+          "symbol": "TATAPOWER",
+          "name": "TATAPOWER",
+          "exchange": "NSE",
+          "sector": "Unknown",
+          "reasoning": "The stock was mentioned as one of the 'Most Traded Stocks', indicating high trading activity.",
+          "recommendation": "HOLD"
+        },
+        {
+          "symbol": "BHEL",
+          "name": "BHEL",
+          "exchange": "NSE",
+          "sector": "Unknown",
+          "reasoning": "The stock was mentioned as one of the 'Most Traded Stocks', indicating high trading activity.",
+          "recommendation": "HOLD"
+        },
+        {
+          "symbol": "IOC",
+          "name": "IOC",
+          "exchange": "NSE",
+          "sector": "Unknown",
+          "reasoning": "The stock was mentioned as one of the 'Most Traded Stocks', indicating high trading activity.",
+          "recommendation": "HOLD"
+        },
+        {
+          "symbol": "HUDCO",
+          "name": "HUDCO",
+          "exchange": "NSE",
+          "sector": "Unknown",
+          "reasoning": "The stock was mentioned as one of the 'Most Traded Stocks', indicating high trading activity.",
+          "recommendation": "HOLD"
+        },
+        {
+          "symbol": "SAIL",
+          "name": "SAIL",
+          "exchange": "NSE",
+          "sector": "Unknown",
+          "reasoning": "The stock was mentioned as one of the 'Most Traded Stocks', indicating high trading activity.",
+          "recommendation": "HOLD"
+        },
+        {
+          "symbol": "SUZLON",
+          "name": "SUZLON",
+          "exchange": "NSE",
+          "sector": "Unknown",
+          "reasoning": "The stock was mentioned in the 'Stocks Feed' section, indicating its presence in general market updates.",
+          "recommendation": "HOLD"
+        },
+        {
+          "symbol": "ZOMATO",
+          "name": "ZOMATO",
+          "exchange": "NSE",
+          "sector": "Unknown",
+          "reasoning": "The stock was mentioned in the 'Stocks Feed' section, indicating its presence in general market updates.",
+          "recommendation": "HOLD"
+        },
+        {
+          "symbol": "YESBANK",
+          "name": "YESBANK",
+          "exchange": "NSE",
+          "sector": "Unknown",
+          "reasoning": "The stock was mentioned in the 'Stocks Feed' section, indicating its presence in general market updates.",
+          "recommendation": "HOLD"
+        },
+        {
+          "symbol": "INFY",
+          "name": "Infosys",
+          "exchange": "NSE",
+          "sector": "IT",
+          "reasoning": "The stock was mentioned in the 'Stocks Feed' section, indicating its presence in general market updates.",
+          "recommendation": "HOLD"
+        },
+        {
+          "symbol": "NBCC",
+          "name": "NBCC",
+          "exchange": "NSE",
+          "sector": "Unknown",
+          "reasoning": "The stock was mentioned in the 'Stocks Feed' section, indicating its presence in general market updates.",
+          "recommendation": "HOLD"
+        },
+        {
+          "symbol": "IRCTC",
+          "name": "IRCTC",
+          "exchange": "NSE",
+          "sector": "Unknown",
+          "reasoning": "The stock was mentioned in the 'Stocks Feed' section, indicating its presence in general market updates.",
+          "recommendation": "HOLD"
+        },
+        {
+          "symbol": "IRFC",
+          "name": "IRFC",
+          "exchange": "NSE",
+          "sector": "Unknown",
+          "reasoning": "The stock was mentioned in the 'Share Market Live Update' section, indicating its presence in live market news.",
+          "recommendation": "HOLD"
+        },
+        {
+          "symbol": "BEL",
+          "name": "BEL",
+          "exchange": "NSE",
+          "sector": "Unknown",
+          "reasoning": "The stock was mentioned in the 'Share Market Live Update' section, indicating its presence in live market news.",
+          "recommendation": "HOLD"
+        },
+        {
+          "symbol": "HDFCBANK",
+          "name": "HDFC Bank",
+          "exchange": "NSE",
+          "sector": "Banking",
+          "reasoning": "The stock was mentioned in the 'Share Market Live Update' section, indicating its presence in live market news.",
+          "recommendation": "HOLD"
+        },
+        {
+          "symbol": "VEDL",
+          "name": "VEDL",
+          "exchange": "NSE",
+          "sector": "Unknown",
+          "reasoning": "The stock was mentioned in the 'Share Market Live Update' section, indicating its presence in live market news.",
+          "recommendation": "HOLD"
+        },
+        {
+          "symbol": "RELPOWER",
+          "name": "RELPOWER",
+          "exchange": "NSE",
+          "sector": "Unknown",
+          "reasoning": "The stock was mentioned in the 'Share Market Live Update' section, indicating its presence in live market news.",
+          "recommendation": "HOLD"
+        },
+        {
+          "symbol": "JPPOWER",
+          "name": "JPPOWER",
+          "exchange": "NSE",
+          "sector": "Unknown",
+          "reasoning": "The stock was mentioned in the 'Share Market Live Update' section, indicating its presence in live market news.",
+          "recommendation": "HOLD"
+        }
+      ],
+      "sectors": [
+        "Realty",
+        "PSU Banking",
+        "FMCG",
+        "Banking",
+        "Pharma",
+        "Metal",
+        "Private Banking",
+        "IT",
+        "Auto",
+        "Commodities",
+        "Healthcare",
+        "Defence",
+        "Railways",
+        "Financial Services",
+        "Automotive"
+      ],
+      "summary": "This Groww digest provides an overview of the platform's various investment services, tools, and lists of market data. It categorizes stocks based on daily performance (top gainers, top losers), trading activity (most traded), and general market updates, alongside listing various Nifty indices and mutual fund categories available for investment. The article does not offer specific market analysis or discuss macro trends, but rather presents a snapshot of active stocks and investment avenues on the Groww platform.",
+      "discoveredAt": "2026-03-22T15:34:56.444Z"
+    },
+    "expiresAt": 1774798496461
   }
 }
