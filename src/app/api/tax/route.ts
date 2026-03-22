@@ -147,7 +147,7 @@ export async function GET() {
           const buyTrades = results.filter((t: any) => t.trade_type === 'buy');
           allBuyTrades.push(...buyTrades);
 
-          totalPages = data.data.pagination.total_pages;
+          totalPages = data.data.pagination?.total_pages || 1;
           page++;
         }
 
