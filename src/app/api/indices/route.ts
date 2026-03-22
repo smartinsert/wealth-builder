@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import yahooFinance from "yahoo-finance2";
+import yahooFinanceDefault from "yahoo-finance2";
+
+const yahooFinance = new (yahooFinanceDefault as any)();
 
 export async function GET() {
   try {

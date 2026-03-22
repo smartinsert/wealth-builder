@@ -11,6 +11,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { RecommendationCard } from "@/components/recommendation-card";
 import { LTCGTab } from "@/components/ltcg-tab";
 import { MarketOverview } from "@/components/market-overview";
+import { HoldingsTable } from "@/components/holdings-table";
 import {
   Carousel,
   CarouselContent,
@@ -168,7 +169,9 @@ export function DashboardClient({ portfolio, initialDiscoveries }: DashboardClie
             </CardContent>
           </Card>
           
-          <MarketOverview portfolioChangePercent={portfolioChangePercent} />
+          <MarketOverview portfolioChangePercent={portfolioChangePercent} holdings={portfolio.holdings} />
+          
+          <HoldingsTable holdings={portfolio.holdings} />
         </section>
       )}
 

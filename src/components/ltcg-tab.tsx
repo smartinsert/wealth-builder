@@ -29,6 +29,7 @@ interface HarvestHolding {
   unrealizedGain: number;
   unrealizedGainPct: number;
   currentValue: number;
+  buyDate?: string; // Tracked via separate API later
 }
 
 interface HarvestingPlan {
@@ -108,9 +109,10 @@ function HoldingRow({ h, tag }: { h: HarvestHolding; tag?: "sell-gain" | "sell-l
         <Badge variant="outline" className="text-[10px] py-0 px-1.5 shrink-0">{h.exchange}</Badge>
       </div>
       <div className="flex items-center gap-4 text-right shrink-0 text-sm">
-        <div className="hidden sm:block text-muted-foreground text-xs">
+        <div className="hidden sm:block text-muted-foreground text-xs text-right">
           <div>{h.quantity} @ {formatINR(h.average_price)}</div>
           <div className="text-[11px]">LTP: {formatINR(h.last_price)}</div>
+          <div className="text-[10px] text-amber-600/70 font-medium tracking-tight mt-0.5 whitespace-nowrap">Buy Date: {h.buyDate || "Unknown (Console)"}</div>
         </div>
         <div className={`font-semibold whitespace-nowrap ${isGain ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"}`}>
           {formatINR(h.unrealizedGain, true)}
@@ -220,11 +222,11 @@ export function LTCGTab() {
 
         <Card>
           <CardHeader className="pb-1 pt-4 px-4">
-            <CardTitle className="text-xs text-muted-foreground font-medium">LTCG ₹1.25L Free Limit</CardTitle>
+            <CardTitle className="text-xs text-muted-foreground font-medium">Est. LTCG vs ₹1.25L Limit</CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
             <div className={`text-xl font-bold ${isExceeded ? "text-amber-600 dark:text-amber-400" : "text-blue-600 dark:text-blue-400"}`}>
-              {isExceeded ? "⚠ Exceeded" : `${formatINR(LTCG_THRESHOLD - totalGain)} left`}
+              {isExceeded ? "1.25L Limit Reached*" : `${formatINR(LTCG_THRESHOLD - totalGain)} left*`}
             </div>
             <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
               <div
@@ -232,7 +234,7 @@ export function LTCGTab() {
                 style={{ width: `${ltcgUtilizationPct}%` }}
               />
             </div>
-            <p className="text-xs text-muted-foreground mt-1">{ltcgUtilizationPct.toFixed(0)}% utilized</p>
+            <p className="text-[10px] text-muted-foreground mt-1">*Assuming all gains are Long-Term</p>
           </CardContent>
         </Card>
 
@@ -261,7 +263,7 @@ export function LTCGTab() {
           onClick={() => setActiveTab("optimizer")}
           className={`text-sm font-medium px-4 py-1.5 rounded-md transition-colors ${activeTab === "optimizer" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
         >
-          Tax Optimizer 🎯
+          Unrealized Profit Harvester 🎯
         </button>
       </div>
 
@@ -307,20 +309,20 @@ export function LTCGTab() {
               <div>
                 <p className={`font-semibold text-base ${plan.taxableAbove125L === 0 ? "text-emerald-800 dark:text-emerald-300" : "text-amber-800 dark:text-amber-300"}`}>
                   {plan.taxableAbove125L === 0
-                    ? "✅ Optimal Plan: Net realized = ₹1.25L (tax-free!)"
-                    : `⚠ After harvesting, ₹${Math.round(plan.taxableAbove125L).toLocaleString()} is still taxable`
+                    ? "✅ Targeted Realized Gain: ₹1.25L"
+                    : `⚠ Harvest simulation falls above tax-free limit`
                   }
                 </p>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                  Projected net realized gain: <strong>{formatINR(plan.projectedNet)}</strong>
-                  {plan.estimatedTax > 0 && <> · Est. tax: <strong className="text-amber-700 dark:text-amber-400">{formatINR(plan.estimatedTax)}</strong> at 12.5% LTCG rate</>}
+                  Projected net REALIZED gain: <strong>{formatINR(plan.projectedNet)}</strong>
+                  {plan.estimatedTax > 0 && <> · Potentially Taxable: <strong className="text-amber-700 dark:text-amber-400">{formatINR(plan.estimatedTax)}</strong> at LTCG rate</>}
                 </p>
               </div>
               <div className="text-right shrink-0">
                 <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
                   {formatINR(plan.projectedNet)}
                 </div>
-                <div className="text-xs text-muted-foreground">Booked gain target</div>
+                <div className="text-xs text-muted-foreground">Est. Gain Target</div>
               </div>
             </div>
           </div>
@@ -368,7 +370,7 @@ export function LTCGTab() {
 
           {/* Disclaimer */}
           <div className="rounded-md bg-muted/50 border p-3 text-xs text-muted-foreground">
-            <strong>Disclaimer:</strong> This optimizer calculates based on unrealized gains/losses from your current Kite holdings using the LTCG 12.5% rate applicable for equity above ₹1.25L. LTCG vs STCG classification depends on the actual holding period per lot (1+ year for LTCG). Please verify holding periods via Kite Console before executing any trades. Buying back within 30 days triggers wash-sale rules.
+            <strong>Disclaimer:</strong> This overview simulates profit booking based strictly on your unrealized totals. Kite API web endpoints do not return trade dates per-lot, therefore it incorrectly assumes all your profitable holdings span &gt;1 year. Do not make trades before verifying exact purchase dates directly via Kite Console.
           </div>
         </div>
       )}
