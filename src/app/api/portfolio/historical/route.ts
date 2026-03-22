@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     const days = timeframes[timeframe];
     const period1 = new Date();
     period1.setDate(period1.getDate() - days);
-    const period1Str = period1.toISOString().split("T")[0];
+    const period2 = new Date();
 
     let pastValue = 0;
     let currentValue = 0;
@@ -32,7 +32,8 @@ export async function POST(req: Request) {
     let niftyReturns = 0;
     try {
       const niftyHist = await yahooFinance.historical("^NSEI", {
-        period1: period1Str,
+        period1,
+        period2,
         interval: "1d",
       });
       if (niftyHist.length > 0) {
@@ -54,7 +55,8 @@ export async function POST(req: Request) {
         
         try {
           const hist = await yahooFinance.historical(symbol, {
-            period1: period1Str,
+            period1,
+            period2,
             interval: "1d",
           });
           

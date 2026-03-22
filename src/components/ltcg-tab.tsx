@@ -188,14 +188,12 @@ export function LTCGTab() {
 
   const totalGain = summary.totalGain;
   const totalLoss = summary.totalLoss;
-  const isExceeded = totalGain > LTCG_THRESHOLD;
-  const ltcgUtilizationPct = Math.min(100, (totalGain / LTCG_THRESHOLD) * 100);
 
   return (
     <div className="space-y-6">
 
       {/* Summary Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <Card>
           <CardHeader className="pb-1 pt-4 px-4">
             <CardTitle className="text-xs text-muted-foreground font-medium">Total Unrealized Gain</CardTitle>
@@ -217,24 +215,6 @@ export function LTCGTab() {
               -{formatINR(Math.abs(totalLoss))}
             </div>
             <p className="text-xs text-muted-foreground">{losing.length} loss-making holdings</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-1 pt-4 px-4">
-            <CardTitle className="text-xs text-muted-foreground font-medium">Est. LTCG vs ₹1.25L Limit</CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className={`text-xl font-bold ${isExceeded ? "text-amber-600 dark:text-amber-400" : "text-blue-600 dark:text-blue-400"}`}>
-              {isExceeded ? "1.25L Limit Reached*" : `${formatINR(LTCG_THRESHOLD - totalGain)} left*`}
-            </div>
-            <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full ${isExceeded ? "bg-amber-500" : "bg-blue-500"}`}
-                style={{ width: `${ltcgUtilizationPct}%` }}
-              />
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-1">*Assuming all gains are Long-Term</p>
           </CardContent>
         </Card>
 
