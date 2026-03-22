@@ -34,6 +34,8 @@ async function extractTokens() {
 
   let csrfToken: string | null = null;
   let encToken: string | null = null;
+  let consoleCookies: string | null = null;
+  let hasRedirectedToConsole = false;
 
   await page.setRequestInterception(true);
 
@@ -41,7 +43,8 @@ async function extractTokens() {
     const headers = request.headers();
     
     // Look for API requests to intercept both tokens
-    if (request.url().includes('zerodha.com/api')) {
+    const url = request.url();
+    if (url.includes('zerodha.com/api') || url.includes('zerodha.com/oms')) {
       if (headers['x-csrftoken']) {
         if (!csrfToken) {
           csrfToken = headers['x-csrftoken'];
@@ -54,11 +57,16 @@ async function extractTokens() {
           console.log('✅ Captured KITE_ENCTOKEN from Headers:', encToken.substring(0, 10) + '...');
         }
       }
+      
+      const cookieHeader = headers['cookie'] || '';
+      if (cookieHeader.includes('kf_session=')) {
+        console.log('✅ Seen kf_session in headers');
+      }
     }
     request.continue();
   });
 
-  await page.goto('https://console.zerodha.com/portfolio/holdings');
+  await page.goto('https://kite.zerodha.com/dashboard');
 
   // We loop until we got both or timeout after 5 minutes
   const maxLoops = 300; // 5 minutes (300 * 1s)
@@ -66,19 +74,20 @@ async function extractTokens() {
 
   while (loops < maxLoops) {
     try {
-      // Fallback: Attempt to grab enctoken from cookies directly if not found in headers
-      if (!encToken) {
-        const cookies = await page.cookies('https://kite.zerodha.com', 'https://console.zerodha.com');
-        const encCookie = cookies.find((c) => c.name === 'enctoken');
-        
-        if (encCookie) {
-          encToken = encCookie.value;
-          console.log('✅ Captured KITE_ENCTOKEN from Cookies:', encToken.substring(0, 10) + '...');
-        }
+      if (encToken && !hasRedirectedToConsole) {
+        hasRedirectedToConsole = true;
+        console.log('🔄 Captured active enctoken! Redirecting to Console to create session...');
+        await page.goto('https://console.zerodha.com/portfolio/holdings');
+        await new Promise((r) => setTimeout(r, 2000)); // Wait for redirect/load
       }
 
-      if (encToken) {
-        console.log('🎉 Successfully captured enctoken!');
+      const cookies = await page.cookies('https://kite.zerodha.com', 'https://console.zerodha.com');
+      const kfSessionCookie = cookies.find((c) => c.name === 'kf_session');
+      const hasConsoleSession = !!kfSessionCookie;
+
+      if (encToken && hasConsoleSession) {
+        consoleCookies = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+        console.log('🎉 Successfully captured enctoken and console cookies (kf_session)!');
         break;
       }
     } catch (error: any) {
@@ -94,10 +103,11 @@ async function extractTokens() {
     loops++;
   }
 
-  if (encToken) {
+  if (encToken && consoleCookies) {
     console.log('💾 Saving to .env.local...');
     const payload: Record<string, string> = {
       KITE_ENCTOKEN: encToken,
+      KITE_CONSOLE_COOKIES: consoleCookies,
     };
     if (csrfToken) {
       payload.KITE_CSRFTOKEN = csrfToken;

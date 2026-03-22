@@ -47,14 +47,36 @@ export async function GET() {
       signal: AbortSignal.timeout(12000),
     });
 
-    if (!holdingsRes.ok) {
+    const mfHoldingsRes = await fetch(`${KITE_API_BASE}/mf/holdings`, {
+      headers,
+      signal: AbortSignal.timeout(12000),
+    });
+
+    if (!holdingsRes.ok || !mfHoldingsRes.ok) {
       const errorText = await holdingsRes.text();
       console.error("[Tax API] Holdings fetch failed:", holdingsRes.status, errorText);
       return NextResponse.json({ error: "Failed to fetch holdings from Kite" }, { status: holdingsRes.status });
     }
 
     const holdingsJson = await holdingsRes.json();
+    const mfHoldingsJson = await mfHoldingsRes.json();
+
     const rawHoldings: KiteHolding[] = holdingsJson.data || [];
+    const rawMfHoldings = mfHoldingsJson.data || [];
+
+    const parsedMfHoldings: KiteHolding[] = rawMfHoldings.map((mf: any) => ({
+      tradingsymbol: mf.fund,
+      exchange: "MF",
+      isin: mf.tradingsymbol,
+      quantity: mf.quantity,
+      average_price: mf.average_price,
+      last_price: mf.last_price,
+      pnl: mf.pnl || ((mf.last_price - mf.average_price) * mf.quantity),
+      day_change: 0,
+      day_change_percentage: 0
+    }));
+
+    const allHoldings = [...rawHoldings, ...parsedMfHoldings];
 
     // --- LTCG Analysis ---
     // Kite does not expose per-lot purchase dates via the web holdings API.
@@ -63,7 +85,7 @@ export async function GET() {
     // For LTCG classification: stocks with a positive unrealized gain are candidates.
     // We surface ALL profitable holdings sorted by gain (largest LTCG opportunity first).
 
-    const profitable: LTCGHolding[] = rawHoldings
+    const profitable: LTCGHolding[] = allHoldings
       .filter(h => h.pnl > 0)
       .map(h => {
         const currentValue = h.last_price * h.quantity;
@@ -84,7 +106,7 @@ export async function GET() {
       })
       .sort((a, b) => b.unrealizedGain - a.unrealizedGain);
 
-    const losing: LTCGHolding[] = rawHoldings
+    const losing: LTCGHolding[] = allHoldings
       .filter(h => h.pnl <= 0)
       .map(h => {
         const currentValue = h.last_price * h.quantity;
@@ -114,7 +136,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       summary: {
-        totalHoldings: rawHoldings.length,
+        totalHoldings: allHoldings.length,
         profitableCount: profitable.length,
         losingCount: losing.length,
         totalUnrealizedGain,

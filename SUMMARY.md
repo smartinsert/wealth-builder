@@ -1,14 +1,11 @@
-# Session Summary: Kite Login Integration
+# Session Summary: UI Refactor & Tax PnL Fix
 
 ## What was accomplished
-- Created a local API route (`/api/auth/kite/route.ts`) that programmatically spawns the existing token extraction Puppeteer script.
-- Updated `DashboardClient` to include a "Kite Login" button.
-- The button calls the local API route, waits for the user to securely log in via the headful Chrome pop-up, captures the `enctoken` and `csrftoken`, and finally automatically refreshes the Next.js component to fetch live portfolio data.
-- Handled UI states (loading indications) and added a helpful tooltip for the new button.
+- **Homepage UI Redesign**: Organized the dashboard into three distinct tabs (`Summary`, `Recommendations`, and `LTCG Analytics`). 
+- **Market Overview**: Built a new `MarketOverview` component fetching live indices (Nifty 50 and Bank Nifty) via Yahoo Finance API (`yahoo-finance2`), displaying portfolio performance compared to Nifty 50.
+- **Tax PnL Accuracy**: Debugged the Unrealized/Tax PnL calculation in `/api/tax/route.ts`. The API now fetches Mutual Fund (MF) holdings uniformly alongside equity via Kite API, resolving a major discrepancy in Tax PnL where MF gains were previously ignored.
 
-## How to use
-On the dashboard, click the "Kite Login" button. A new Chrome window will open to `console.zerodha.com`. Perform your login manually, and once completed, the browser will close and your dashboard will immediately refresh with your live holdings.
-
-## Next Steps
-- Implement historical P&L charts using the analytics computed from the extracted tokens.
-- Refine the discovery engine matching algorithm with more dynamic logic.
+## State of the App
+- The application cleanly separates the discovery pipeline (Recommendations) from the core portfolio summary and LTCG tracking.
+- Build is passing and automated `bd` issue tracking has been strictly adhered to (`wealth-builder-3ih` created and closed).
+- Next steps would involve tackling the backend integration for dated holdings (`wealth-builder-q97`) for exact 365-day LTCG precision.
