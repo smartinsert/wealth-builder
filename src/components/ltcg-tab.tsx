@@ -58,8 +58,10 @@ function formatINR(value: number, showSign = false): string {
 function computeHarvestingPlan(profitable: HarvestHolding[], losing: HarvestHolding[]): HarvestingPlan {
   const totalLoss = losing.reduce((sum, h) => sum + h.unrealizedGain, 0); // negative number
   
-  // Sort gains smallest first so we sell minimum stocks needed
-  const gainsSortedAsc = [...profitable].sort((a, b) => a.unrealizedGain - b.unrealizedGain);
+  // Sort gains smallest first so we sell minimum stocks needed.
+  // We ONLY want to harvest LTCG lots to utilize the ₹1.25L tax-free threshold.
+  const ltcgGains = profitable.filter(h => h.type === "LTCG");
+  const gainsSortedAsc = [...ltcgGains].sort((a, b) => a.unrealizedGain - b.unrealizedGain);
   
   // We want to book gains such that: gains + totalLoss = LTCG_THRESHOLD
   // i.e. gains = LTCG_THRESHOLD - totalLoss = LTCG_THRESHOLD + |totalLoss|
