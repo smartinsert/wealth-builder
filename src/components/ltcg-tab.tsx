@@ -41,21 +41,28 @@ interface HarvestingPlan {
   estimatedTax: number;            // 12.5% tax on amount above ₹1.25L
 }
 
-const LTCG_THRESHOLD = 125000;  // ₹1.25L FY2024-25 onwards
+interface ConsoleTLH {
+  realizedStcg: number;
+  realizedLtcg: number;
+  unrealizedStcl: number;
+  unrealizedLtcl: number;
+}
+
+const DEFAULT_LTCG_THRESHOLD = 125000;  // ₹1.25L FY2024-25 onwards
 const LTCG_TAX_RATE = 0.125;    // 12.5%
 
-function formatINR(value: number, showSign = false): string {
-  const abs = "₹" + Math.abs(value).toLocaleString("en-IN", { maximumFractionDigits: 0 });
+function formatINR(value: number, showSign = false, precise = false): string {
+  const abs = "₹" + Math.abs(value).toLocaleString("en-IN", { maximumFractionDigits: precise ? 2 : 0 });
   if (showSign) return (value >= 0 ? "+" : "-") + abs;
   return abs;
 }
 
 // ── Tax Harvesting Optimizer ──
-// Goal: Find a combination of holdings to sell such that net realized gain = ₹1.25L
+// Goal: Find a combination of holdings to sell such that net realized gain = activeThreshold
 // Strategy: 
 //   1. Take ALL losses to offset gains (tax-loss harvesting)
-//   2. Then sell gains from smallest to largest until we hit ₹1.25L
-function computeHarvestingPlan(profitable: HarvestHolding[], losing: HarvestHolding[]): HarvestingPlan {
+//   2. Then sell gains from smallest to largest until we hit activeThreshold
+function computeHarvestingPlan(profitable: HarvestHolding[], losing: HarvestHolding[], activeThreshold: number): HarvestingPlan {
   const totalLoss = losing.reduce((sum, h) => sum + h.unrealizedGain, 0); // negative number
   
   // Sort gains smallest first so we sell minimum stocks needed.
@@ -63,11 +70,10 @@ function computeHarvestingPlan(profitable: HarvestHolding[], losing: HarvestHold
   const ltcgGains = profitable.filter(h => h.type === "LTCG");
   const gainsSortedAsc = [...ltcgGains].sort((a, b) => a.unrealizedGain - b.unrealizedGain);
   
-  // We want to book gains such that: gains + totalLoss = LTCG_THRESHOLD
-  // i.e. gains = LTCG_THRESHOLD - totalLoss = LTCG_THRESHOLD + |totalLoss|
-  const targetGains = LTCG_THRESHOLD - totalLoss; // since totalLoss is negative, this is > 1.25L
+  // We want to book gains such that: gains + totalLoss = activeThreshold
+  // i.e. gains = activeThreshold - totalLoss
+  const targetGains = activeThreshold - totalLoss; 
   
-  // If total losses absorb enough, we can book more gains
   // Pick the smallest subset of gains that sums to >= targetGains
   const sellGains: HarvestHolding[] = [];
   let gainsAccum = 0;
@@ -78,14 +84,14 @@ function computeHarvestingPlan(profitable: HarvestHolding[], losing: HarvestHold
   }
 
   const projectedNet = gainsAccum + totalLoss;
-  const taxableAbove125L = Math.max(0, projectedNet - LTCG_THRESHOLD);
-  const estimatedTax = taxableAbove125L * LTCG_TAX_RATE;
+  const taxableAboveThreshold = Math.max(0, projectedNet - activeThreshold);
+  const estimatedTax = taxableAboveThreshold * LTCG_TAX_RATE;
 
   return {
     sellGains,
     sellLosses: losing, // sell ALL losing positions to maximize offset
     projectedNet,
-    taxableAbove125L,
+    taxableAbove125L: taxableAboveThreshold,
     estimatedTax,
   };
 }
@@ -136,7 +142,7 @@ export function LTCGTab() {
   const [profitable, setProfitable] = useState<HarvestHolding[]>([]);
   const [losing, setLosing] = useState<HarvestHolding[]>([]);
   const [summary, setSummary] = useState<{
-    totalGain: number; totalLoss: number; netPnl: number; count: number;
+    totalGain: number; totalLoss: number; netPnl: number; count: number; tlhReport: ConsoleTLH | null; activeLtcgThreshold: number;
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -160,9 +166,11 @@ export function LTCGTab() {
             totalLoss: d.summary.totalUnrealizedLoss,
             netPnl: d.summary.netUnrealizedPnl,
             count: d.summary.totalHoldings,
+            tlhReport: d.summary.tlhReport,
+            activeLtcgThreshold: d.summary.ltcgThreshold
           });
           // Compute harvesting plan immediately
-          setPlan(computeHarvestingPlan(d.profitable, d.losing));
+          setPlan(computeHarvestingPlan(d.profitable, d.losing, d.summary.ltcgThreshold));
         } else {
           setError(d.error || "Failed to load holdings from Kite");
           if (d.sessionExpired) setSessionExpired(true);
@@ -205,6 +213,36 @@ export function LTCGTab() {
 
   return (
     <div className="space-y-6">
+
+      {/* Native Console TLH Display */}
+      {summary.tlhReport && (
+        <Card className="bg-gradient-to-br from-card to-muted border-none shadow-sm dark:to-background/50">
+          <CardHeader className="pb-3 border-b border-border/50">
+            <CardTitle className="text-sm tracking-tight flex items-center justify-between">
+              <span>Console Tax-Loss Harvesting Report</span>
+              <Badge variant="outline" className="font-normal text-[10px] bg-background">Live Match</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4 px-2 sm:px-4 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 divide-x divide-border/30">
+            <div className="pl-0 md:pl-2">
+              <div className="text-[11px] text-muted-foreground uppercase font-semibold tracking-wider mb-1">Realized STCG</div>
+              <div className="text-lg font-bold">{formatINR(summary.tlhReport.realizedStcg, false, true)}</div>
+            </div>
+            <div className="pl-4">
+              <div className="text-[11px] text-muted-foreground uppercase font-semibold tracking-wider mb-1">Unrealized STCL</div>
+              <div className="text-lg font-bold">{formatINR(summary.tlhReport.unrealizedStcl, false, true)}</div>
+            </div>
+            <div className="pl-4">
+              <div className="text-[11px] text-muted-foreground uppercase font-semibold tracking-wider mb-1">Realized LTCG</div>
+              <div className="text-lg font-bold text-emerald-700 dark:text-emerald-400">{formatINR(summary.tlhReport.realizedLtcg, false, true)}</div>
+            </div>
+            <div className="pl-4">
+              <div className="text-[11px] text-muted-foreground uppercase font-semibold tracking-wider mb-1">Unrealized LTCL</div>
+              <div className="text-lg font-bold text-rose-700 dark:text-rose-400">{formatINR(summary.tlhReport.unrealizedLtcl, false, true)}</div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Summary Row */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -303,8 +341,8 @@ export function LTCGTab() {
               <div>
                 <p className={`font-semibold text-base ${plan.taxableAbove125L === 0 ? "text-emerald-800 dark:text-emerald-300" : "text-amber-800 dark:text-amber-300"}`}>
                   {plan.taxableAbove125L === 0
-                    ? "✅ Targeted Realized Gain: ₹1.25L"
-                    : `⚠ Harvest simulation falls above tax-free limit`
+                    ? `✅ Targeted Realized Gain: ${formatINR(summary.activeLtcgThreshold)}`
+                    : `⚠ Harvest simulation falls above remaining tax-free limit`
                   }
                 </p>
                 <p className="text-sm text-muted-foreground mt-0.5">
@@ -316,7 +354,7 @@ export function LTCGTab() {
                 <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
                   {formatINR(plan.projectedNet)}
                 </div>
-                <div className="text-xs text-muted-foreground">Est. Gain Target</div>
+                <div className="text-xs text-muted-foreground">Remaining Limit Target</div>
               </div>
             </div>
           </div>
@@ -364,7 +402,7 @@ export function LTCGTab() {
 
           {/* Disclaimer */}
           <div className="rounded-md bg-muted/50 border p-3 text-xs text-muted-foreground">
-            <strong>Note:</strong> This harvesting plan correctly identifies <strong>LTCG</strong> (&gt;1 year) and <strong>STCG</strong> lots exactly via your Console Tradebook history using FIFO allocation backwards across previous years. Only Long-Term lots are suggested above to reach the 1.25L tax-free threshold.
+            <strong>Note:</strong> This harvesting plan correctly identifies <strong>LTCG</strong> (&gt;1 year) and <strong>STCG</strong> lots via your Console Tradebook. Because you have <strong>{formatINR((summary.tlhReport?.realizedLtcg || 0))}</strong> in previously Realized LTCG this financial year, the optimizer target has been reduced to utilize the remaining <strong>{formatINR(summary.activeLtcgThreshold)}</strong>.
           </div>
         </div>
       )}

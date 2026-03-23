@@ -15,17 +15,20 @@ interface KiteHolding {
   day_change_percentage: number;
 }
 
-interface LTCGHolding {
-  tradingsymbol: string;
-  exchange: string;
-  isin: string;
-  quantity: number;
-  average_price: number;
-  last_price: number;
+interface LTCGHolding extends KiteHolding {
   currentValue: number;
   costBasis: number;
-  unrealizedGain: number;
+  unrealizedGain: number;       // Based on true PnL from Vite API
   unrealizedGainPct: number;
+  type: "LTCG" | "STCG";
+  buyDateStr: string;
+}
+
+interface ConsoleTLH {
+  realizedStcg: number;
+  realizedLtcg: number;
+  unrealizedStcl: number;
+  unrealizedLtcl: number;
 }
 
 export async function GET() {
@@ -173,7 +176,44 @@ export async function GET() {
     // Sort descending by date (most recent buys first) to apply FIFO accurately.
     allBuyTrades.sort((a, b) => new Date(b.trade_date).getTime() - new Date(a.trade_date).getTime());
 
-
+    // --- Pull Native TLH Report ---
+    let tlhReport: ConsoleTLH | null = null;
+    if (consoleCookies && consoleCsrf) {
+      const currentYear = currentDate.getFullYear();
+      const currentMonth = currentDate.getMonth(); // 0 = Jan, 2 = Mar, 3 = Apr
+      const startYear = currentMonth >= 3 ? currentYear : currentYear - 1;
+      const tlhFy = `${startYear}_${startYear + 1}`;
+      
+      const tlhUrl = `https://console.zerodha.com/api/reports/taxloss_harvesting?fy=${tlhFy}&from_quarter=Q1&to_quarter=Q4`;
+      const tlhRes = await fetch(tlhUrl, {
+        headers: {
+          "accept": "application/json, text/plain, */*",
+          "sec-ch-ua": "\"Chromium\";v=\"146\", \"Not-A.Brand\";v=\"24\", \"Google Chrome\";v=\"146\"",
+          "sec-ch-ua-mobile": "?0",
+          "sec-ch-ua-platform": "\"Windows\"",
+          "sec-fetch-dest": "empty",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-site": "same-origin",
+          "x-csrftoken": consoleCsrf,
+          "cookie": consoleCookies
+        }
+      });
+      
+      if (tlhRes.ok) {
+        const tlhJson = await tlhRes.json();
+        if (tlhJson.status === "success" && tlhJson.data && tlhJson.data.result) {
+          const resEq = tlhJson.data.result.eq || {};
+          const resMf = tlhJson.data.result.mf || {};
+          
+          tlhReport = {
+            realizedStcg: (resEq.short_term_profit || 0) + (resMf.short_term_trade_equity || 0) + (resMf.short_term_trade_debt || 0),
+            realizedLtcg: (resEq.long_term_profit || 0) + (resMf.long_term_trade_equity || 0) + (resMf.long_term_trade_debt || 0),
+            unrealizedStcl: (resEq.short_term_unrealized_profit || 0) + (resMf.short_term_trade_equity_unrealized || 0) + (resMf.short_term_trade_debt_unrealized || 0),
+            unrealizedLtcl: (resEq.long_term_unrealized_profit || 0) + (resMf.long_term_trade_equity_unrealized || 0) + (resMf.long_term_trade_debt_unrealized || 0),
+          };
+        }
+      }
+    }
 
     const splitHoldings: (LTCGHolding & { type: "LTCG" | "STCG", buyDateStr: string })[] = [];
     const oneYearAgo = new Date();
@@ -249,8 +289,11 @@ export async function GET() {
     const totalUnrealizedGain = profitable.filter(h => h.type === "LTCG").reduce((sum, h) => sum + h.unrealizedGain, 0);
     const totalUnrealizedLoss = losing.reduce((sum, h) => sum + h.unrealizedGain, 0); // all losses count
     const netUnrealizedPnl = splitHoldings.reduce((sum, h) => sum + h.unrealizedGain, 0);
-    const ltcgLimitRemaining = Math.max(0, LTCG_THRESHOLD - totalUnrealizedGain);
-    const ltcgUtilizationPct = Math.min(100, (totalUnrealizedGain / LTCG_THRESHOLD) * 100);
+    
+    // Remaining LTCG threshold based on natively realized limits (if TLH available)
+    const activeLTCGThreshold = tlhReport ? Math.max(0, LTCG_THRESHOLD - tlhReport.realizedLtcg) : LTCG_THRESHOLD;
+    const ltcgLimitRemaining = Math.max(0, activeLTCGThreshold - totalUnrealizedGain);
+    const ltcgUtilizationPct = Math.min(100, (totalUnrealizedGain / activeLTCGThreshold) * 100);
 
     return NextResponse.json({
       success: true,
@@ -261,7 +304,8 @@ export async function GET() {
         totalUnrealizedGain,
         totalUnrealizedLoss,
         netUnrealizedPnl,
-        ltcgThreshold: LTCG_THRESHOLD,
+        ltcgThreshold: activeLTCGThreshold, // Adjusted for past realizations
+        tlhReport,
         ltcgLimitRemaining,
         ltcgUtilizationPct,
       },
