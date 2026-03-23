@@ -58,38 +58,53 @@ function formatINR(value: number, showSign = false, precise = false): string {
 }
 
 // ── Tax Harvesting Optimizer ──
-// Goal: Find a combination of holdings to sell such that net realized gain = activeThreshold
+// Goal: Find a combination of holdings to sell to book activeThreshold with minimal trades.
 // Strategy: 
-//   1. Take ALL losses to offset gains (tax-loss harvesting)
-//   2. Then sell gains from smallest to largest until we hit activeThreshold
+//   1. Greedily pick the largest LTCG gains until we reach or slightly exceed activeThreshold.
+//   2. If we exceed activeThreshold, pick the largest losses (LTCL/STCL) to offset the excess, stopping once offset.
 function computeHarvestingPlan(profitable: HarvestHolding[], losing: HarvestHolding[], activeThreshold: number): HarvestingPlan {
-  const totalLoss = losing.reduce((sum, h) => sum + h.unrealizedGain, 0); // negative number
-  
-  // Sort gains smallest first so we sell minimum stocks needed.
-  // We ONLY want to harvest LTCG lots to utilize the ₹1.25L tax-free threshold.
+  // We ONLY want to harvest LTCG lots to utilize the tax-free limit.
   const ltcgGains = profitable.filter(h => h.type === "LTCG");
-  const gainsSortedAsc = [...ltcgGains].sort((a, b) => a.unrealizedGain - b.unrealizedGain);
   
-  // We want to book gains such that: gains + totalLoss = activeThreshold
-  // i.e. gains = activeThreshold - totalLoss
-  const targetGains = activeThreshold - totalLoss; 
+  // Sort gains largest first to minimize the number of trades needed to hit the target
+  const gainsSortedDesc = [...ltcgGains].sort((a, b) => b.unrealizedGain - a.unrealizedGain);
   
-  // Pick the smallest subset of gains that sums to >= targetGains
   const sellGains: HarvestHolding[] = [];
   let gainsAccum = 0;
-  for (const h of gainsSortedAsc) {
-    if (gainsAccum >= targetGains) break;
+  
+  // Book gains until we hit the threshold
+  for (const h of gainsSortedDesc) {
+    if (gainsAccum >= activeThreshold) break;
     sellGains.push(h);
     gainsAccum += h.unrealizedGain;
   }
 
-  const projectedNet = gainsAccum + totalLoss;
+  // Calculate if we breached the tax-free threshold
+  const excessGain = Math.max(0, gainsAccum - activeThreshold);
+  
+  const sellLosses: HarvestHolding[] = [];
+  let lossOffsetAccum = 0;
+
+  // If we breached the limit, cleverly harvest just enough losses to offset the excess.
+  // STCL and LTCL can both offset LTCG.
+  if (excessGain > 0 && losing.length > 0) {
+    // Sort losses largest first (most negative) to minimize trades
+    const lossesSortedDesc = [...losing].sort((a, b) => a.unrealizedGain - b.unrealizedGain);
+    
+    for (const h of lossesSortedDesc) {
+      if (Math.abs(lossOffsetAccum) >= excessGain) break;
+      sellLosses.push(h);
+      lossOffsetAccum += h.unrealizedGain; // adding negative value
+    }
+  }
+
+  const projectedNet = gainsAccum + lossOffsetAccum;
   const taxableAboveThreshold = Math.max(0, projectedNet - activeThreshold);
   const estimatedTax = taxableAboveThreshold * LTCG_TAX_RATE;
 
   return {
     sellGains,
-    sellLosses: losing, // sell ALL losing positions to maximize offset
+    sellLosses,
     projectedNet,
     taxableAbove125L: taxableAboveThreshold,
     estimatedTax,
