@@ -95,6 +95,7 @@ export async function GET() {
       trade_type: string;
       quantity: number;
       tradingsymbol: string;
+      price: number;
     }
 
     const allBuyTrades: TradebookTrade[] = [];
@@ -223,6 +224,8 @@ export async function GET() {
       let remainingQty = h.quantity;
       let stcgQty = 0;
       let ltcgQty = 0;
+      let stcgCost = 0;
+      let ltcgCost = 0;
 
       const matchingBuys = allBuyTrades.filter(t => t.tradingsymbol === h.tradingsymbol);
       for (const buy of matchingBuys) {
@@ -230,30 +233,43 @@ export async function GET() {
         const take = Math.min(buy.quantity, remainingQty);
 
         const tradeDate = new Date(buy.trade_date);
+        const lotCost = take * buy.price;
         if (tradeDate > oneYearAgo) {
           stcgQty += take;
+          stcgCost += lotCost;
         } else {
           ltcgQty += take;
+          ltcgCost += lotCost;
         }
         remainingQty -= take;
       }
 
-      // Unaccounted stocks are assumed mathematically oldest (pre-history or split/bonus adjusted), hence LTCG
+      // Unaccounted stocks are mathematically oldest (pre-history or split/bonus adjusted), hence LTCG
       if (remainingQty > 0) {
         ltcgQty += remainingQty;
+        // Total known cost
+        const trackedCost = stcgCost + ltcgCost;
+        const totalActualCost = h.average_price * h.quantity;
+        let unaccountedCost = totalActualCost - trackedCost;
+        
+        // Safety check to prevent negative cost bases from split adjustments
+        if (unaccountedCost < 0) {
+          unaccountedCost = remainingQty * h.average_price;
+        }
+        ltcgCost += unaccountedCost;
       }
 
-      const costBasis = h.average_price * h.quantity;
-      const perShareGain = h.pnl / (h.quantity || 1);
-      const unrealizedGainPct = costBasis > 0 ? (h.pnl / costBasis) * 100 : 0;
-
       if (stcgQty > 0) {
+        const stcgCurrentValue = stcgQty * h.last_price;
+        const stcgExactPnl = stcgCurrentValue - stcgCost;
+        const unrealizedGainPct = stcgCost > 0 ? (stcgExactPnl / stcgCost) * 100 : 0;
+        
         splitHoldings.push({
           ...h,
           quantity: stcgQty,
-          currentValue: stcgQty * h.last_price,
-          costBasis: stcgQty * h.average_price,
-          unrealizedGain: stcgQty * perShareGain,
+          currentValue: stcgCurrentValue,
+          costBasis: stcgCost,
+          unrealizedGain: stcgExactPnl,
           unrealizedGainPct,
           type: "STCG",
           buyDateStr: "< 1 Year"
@@ -261,12 +277,16 @@ export async function GET() {
       }
 
       if (ltcgQty > 0) {
+        const ltcgCurrentValue = ltcgQty * h.last_price;
+        const ltcgExactPnl = ltcgCurrentValue - ltcgCost;
+        const unrealizedGainPct = ltcgCost > 0 ? (ltcgExactPnl / ltcgCost) * 100 : 0;
+
         splitHoldings.push({
           ...h,
           quantity: ltcgQty,
-          currentValue: ltcgQty * h.last_price,
-          costBasis: ltcgQty * h.average_price,
-          unrealizedGain: ltcgQty * perShareGain,
+          currentValue: ltcgCurrentValue,
+          costBasis: ltcgCost,
+          unrealizedGain: ltcgExactPnl,
           unrealizedGainPct,
           type: "LTCG",
           buyDateStr: "> 1 Year"
