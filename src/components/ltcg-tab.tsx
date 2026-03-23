@@ -66,14 +66,15 @@ function computeHarvestingPlan(profitable: HarvestHolding[], losing: HarvestHold
   // We ONLY want to harvest LTCG lots to utilize the tax-free limit.
   const ltcgGains = profitable.filter(h => h.type === "LTCG");
   
-  // Sort gains largest first to minimize the number of trades needed to hit the target
-  const gainsSortedDesc = [...ltcgGains].sort((a, b) => b.unrealizedGain - a.unrealizedGain);
+  // Sort gains smallest first so we pick stocks that fit within the remaining limit
+  // e.g., if limit is 21k, pick Maruti (21k gain) instead of Axis Midcap (3.6L gain)
+  const gainsSortedAsc = [...ltcgGains].sort((a, b) => a.unrealizedGain - b.unrealizedGain);
   
   const sellGains: HarvestHolding[] = [];
   let gainsAccum = 0;
   
   // Book gains until we hit the threshold
-  for (const h of gainsSortedDesc) {
+  for (const h of gainsSortedAsc) {
     if (gainsAccum >= activeThreshold) break;
     sellGains.push(h);
     gainsAccum += h.unrealizedGain;
