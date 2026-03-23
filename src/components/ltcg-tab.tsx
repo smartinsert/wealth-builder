@@ -58,44 +58,42 @@ function formatINR(value: number, showSign = false, precise = false): string {
 }
 
 // ── Tax Harvesting Optimizer ──
-// Goal: Find a combination of holdings to sell to book activeThreshold with minimal trades.
-// Strategy: 
-//   1. Greedily pick the largest LTCG gains until we reach or slightly exceed activeThreshold.
-//   2. If we exceed activeThreshold, pick the largest losses (LTCL/STCL) to offset the excess, stopping once offset.
+// Goal: Book gains up to activeThreshold tax-free. Minimize number of trades.
+// Strategy:
+//   1. Pick smallest LTCG gains first until total >= activeThreshold
+//   2. If we slightly overshoot, find the smallest loss that covers the excess
+//   3. If no proportionate loss exists, just accept the small overshoot (pay minor tax)
 function computeHarvestingPlan(profitable: HarvestHolding[], losing: HarvestHolding[], activeThreshold: number): HarvestingPlan {
-  // We ONLY want to harvest LTCG lots to utilize the tax-free limit.
   const ltcgGains = profitable.filter(h => h.type === "LTCG");
-  
-  // Sort gains smallest first so we pick stocks that fit within the remaining limit
-  // e.g., if limit is 21k, pick Maruti (21k gain) instead of Axis Midcap (3.6L gain)
   const gainsSortedAsc = [...ltcgGains].sort((a, b) => a.unrealizedGain - b.unrealizedGain);
-  
+
   const sellGains: HarvestHolding[] = [];
   let gainsAccum = 0;
-  
-  // Book gains until we hit the threshold
+
   for (const h of gainsSortedAsc) {
     if (gainsAccum >= activeThreshold) break;
     sellGains.push(h);
     gainsAccum += h.unrealizedGain;
   }
 
-  // Calculate if we breached the tax-free threshold
   const excessGain = Math.max(0, gainsAccum - activeThreshold);
-  
+
   const sellLosses: HarvestHolding[] = [];
   let lossOffsetAccum = 0;
 
-  // If we breached the limit, cleverly harvest just enough losses to offset the excess.
-  // STCL and LTCL can both offset LTCG.
+  // Only harvest losses if we overshot, and only pick losses that are
+  // proportionate to the excess (don't sell a ₹69k loss for a ₹4k excess).
   if (excessGain > 0 && losing.length > 0) {
-    // Sort losses largest first (most negative) to minimize trades
-    const lossesSortedDesc = [...losing].sort((a, b) => a.unrealizedGain - b.unrealizedGain);
-    
-    for (const h of lossesSortedDesc) {
+    // Sort losses by smallest absolute value first
+    const lossesBySmallest = [...losing].sort((a, b) => Math.abs(a.unrealizedGain) - Math.abs(b.unrealizedGain));
+
+    for (const h of lossesBySmallest) {
       if (Math.abs(lossOffsetAccum) >= excessGain) break;
+      // Skip this loss if it's more than 2x the remaining excess we need to cover
+      const remainingExcess = excessGain - Math.abs(lossOffsetAccum);
+      if (Math.abs(h.unrealizedGain) > remainingExcess * 2) continue;
       sellLosses.push(h);
-      lossOffsetAccum += h.unrealizedGain; // adding negative value
+      lossOffsetAccum += h.unrealizedGain;
     }
   }
 
@@ -368,7 +366,7 @@ export function LTCGTab() {
               </div>
               <div className="text-right shrink-0">
                 <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
-                  {formatINR(plan.projectedNet)}
+                  {formatINR(summary.activeLtcgThreshold)}
                 </div>
                 <div className="text-xs text-muted-foreground">Remaining Limit Target</div>
               </div>
