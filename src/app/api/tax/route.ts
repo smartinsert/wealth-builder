@@ -180,8 +180,10 @@ export async function GET() {
     // --- Pull Native TLH Report ---
     let tlhReport: ConsoleTLH | null = null;
     if (consoleCookies && consoleCsrf) {
-      const currentYear = currentDate.getFullYear();
-      const currentMonth = currentDate.getMonth(); // 0 = Jan, 2 = Mar, 3 = Apr
+      // IMPORTANT: Use a fresh date here — `currentDate` has been mutated by the tradebook loop above
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth(); // 0 = Jan, 2 = Mar, 3 = Apr
       const startYear = currentMonth >= 3 ? currentYear : currentYear - 1;
       const tlhFy = `${startYear}_${startYear + 1}`;
       
