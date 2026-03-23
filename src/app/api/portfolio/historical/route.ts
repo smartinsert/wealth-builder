@@ -23,7 +23,12 @@ export async function POST(req: Request) {
     const days = timeframes[timeframe];
     const period1 = new Date();
     period1.setDate(period1.getDate() - days);
+    
+    // Yahoo Finance throws ValidationErrors on incomplete current-day candles (e.g., exactly at 9:15 AM).
+    // Setting period2 to midnight ensures we only fetch completed historical candles. The current
+    // day's live pricing is already handled by the Kite/Quote endpoints.
     const period2 = new Date();
+    period2.setHours(0, 0, 0, 0);
 
     let pastValue = 0;
     let currentValue = 0;
